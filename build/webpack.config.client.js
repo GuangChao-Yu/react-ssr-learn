@@ -1,10 +1,12 @@
 const path = require('path')
 const webpack = require('webpack')
+const webpackMerge = require('webpack-merge')
+const baseConfig = require('./webpack.base')
 const HTMLPlugin = require('html-webpack-plugin')
 
 const isDev = process.env.NODE_ENV === 'development'
 
-const config = {
+const config = webpackMerge(baseConfig, {
   // 入口
   entry: {
     app: path.join(__dirname, '../client/main.js')
@@ -12,24 +14,7 @@ const config = {
   // 出口
   output: {
     // 打包添加hash值
-    filename: '[name].[hash].js',
-    // 打包到dist目录
-    path: path.join(__dirname, '../dist'),
-    // 公共路径配置-m
-    publicPath: '/public/'
-  },
-  module: {
-    rules: [
-      {
-        test: /.jsx$/,
-        loader: 'babel-loader'
-      },
-      {
-        test: /.js$/,
-        loader: 'babel-loader',
-        exclude: [path.join(__dirname, '../node_modules')]
-      }
-    ]
+    filename: '[name].[hash].js'
   },
   // 添加
   plugins: [
@@ -37,7 +22,7 @@ const config = {
       template: path.join(__dirname, '../client/template.html')
     })
   ]
-}
+})
 
 if (isDev) {
   config.entry = {
