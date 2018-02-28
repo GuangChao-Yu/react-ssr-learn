@@ -3,6 +3,7 @@ const path = require('path')
 const webpack = require('webpack')
 const MomoryFs = require('memory-fs')
 const proxy = require('http-proxy-middleware')
+const asyncBootstrap = require('react-async-bootstrapper').default
 const ReactDomServer = require('react-dom/server')
 
 const serverConfig = require('../../build/webpack.config.server')
@@ -25,7 +26,7 @@ const mfs = new MomoryFs()
 const serverCompiler = webpack(serverConfig)
 // 使用mfs插件包读写文件，内存读写比node中fs模块硬盘中读写速度快
 serverCompiler.outputFileSystem = mfs
-let serverBundle
+let serverBundle, createStoreMap
 serverCompiler.watch({}, (err, stats) => {
   if (err) throw err
   stats = stats.toJson()
@@ -40,7 +41,14 @@ serverCompiler.watch({}, (err, stats) => {
   const m = new Module()
   m._compile(bundle, 'server-entry.js')
   serverBundle = m.exports.default
+  createStoreMap = m.exports.createStoreMap
 })
+
+const getStoreState = stores => {
+  return Object.keys(stores).reduce((result, storeName) => {
+    result[storeName] = stores[storeName].toJson()
+  })
+}
 
 module.exports = function(app) {
   app.use(
@@ -51,8 +59,19 @@ module.exports = function(app) {
   )
   app.get('*', function(req, res) {
     getTemplate().then(template => {
-      const content = ReactDomServer.renderToString(serverBundle)
-      res.send(template.replace('<!-- app -->', content))
+      const routerContext = {}
+      const stores = createStoreMap()
+      const app = serverBundle(stores, routerContext, req.url)
+      asyncBootstrap(app).then(() => {
+        if (routerContext.url) {
+          res.status(302).setHeader('Location', routerContext.url)
+          res.end()
+          return
+        }
+        const state = getStoreState(stores)
+        const content = ReactDomServer.renderToString(app)
+        res.send(template.replace('<!-- app -->', content))
+      })
     })
   })
 }
