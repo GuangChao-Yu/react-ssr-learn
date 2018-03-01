@@ -3,15 +3,13 @@ const path = require('path')
 const webpack = require('webpack')
 const MomoryFs = require('memory-fs')
 const proxy = require('http-proxy-middleware')
-const asyncBootstrap = require('react-async-bootstrapper').default
-const ReactDomServer = require('react-dom/server')
-
+const serverRender = require('./server-render')
 const serverConfig = require('../../build/webpack.config.server')
 
 const getTemplate = () => {
   return new Promise((resolve, reject) => {
     axios
-      .get('http://localhost:8888/public/index.html')
+      .get('http://localhost:8888/public/server.ejs')
       .then(res => {
         resolve(res.data)
       })
@@ -19,14 +17,27 @@ const getTemplate = () => {
   })
 }
 
-const Module = module.constructor
+const NativeModule = require('module')
+const vm = require('vm')
+
+const getModuleFromString = (bundle, filename) => {
+  const m = { exports: {} }
+  const wrapper = NativeModule.wrap(bundle)
+  const script = new vm.Script(wrapper, {
+    filename: filename,
+    displayErrors: true
+  })
+  const result = script.runInThisContext()
+  result.call(m.exports, m.exports, require, m)
+  return m
+}
 
 const mfs = new MomoryFs()
 
 const serverCompiler = webpack(serverConfig)
 // 使用mfs插件包读写文件，内存读写比node中fs模块硬盘中读写速度快
 serverCompiler.outputFileSystem = mfs
-let serverBundle, createStoreMap
+let serverBundle
 serverCompiler.watch({}, (err, stats) => {
   if (err) throw err
   stats = stats.toJson()
@@ -38,17 +49,9 @@ serverCompiler.watch({}, (err, stats) => {
     serverConfig.output.filename
   )
   const bundle = mfs.readFileSync(bundlePath, 'utf-8')
-  const m = new Module()
-  m._compile(bundle, 'server-entry.js')
-  serverBundle = m.exports.default
-  createStoreMap = m.exports.createStoreMap
+  const m = getModuleFromString(bundle, 'server-entry.js')
+  serverBundle = m.exports
 })
-
-const getStoreState = stores => {
-  return Object.keys(stores).reduce((result, storeName) => {
-    result[storeName] = stores[storeName].toJson()
-  })
-}
 
 module.exports = function(app) {
   app.use(
@@ -57,21 +60,14 @@ module.exports = function(app) {
       target: 'http://localhost:8888'
     })
   )
-  app.get('*', function(req, res) {
-    getTemplate().then(template => {
-      const routerContext = {}
-      const stores = createStoreMap()
-      const app = serverBundle(stores, routerContext, req.url)
-      asyncBootstrap(app).then(() => {
-        if (routerContext.url) {
-          res.status(302).setHeader('Location', routerContext.url)
-          res.end()
-          return
-        }
-        const state = getStoreState(stores)
-        const content = ReactDomServer.renderToString(app)
-        res.send(template.replace('<!-- app -->', content))
+  app.get('*', function(req, res, next) {
+    if (!serverBundle) {
+      return res.send('waiting for compile,reflash later')
+    }
+    getTemplate()
+      .then(template => {
+        return serverRender(serverBundle, template, req, res)
       })
-    })
+      .catch(next)
   })
 }

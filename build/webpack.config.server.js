@@ -8,6 +8,7 @@ module.exports = webpackMerge(baseConfig, {
   entry: {
     app: path.join(__dirname, '../client/server-entry.js')
   },
+  externals: Object.keys(require('../package.json').dependencies),
   // 出口
   output: {
     // 打包添加hash值

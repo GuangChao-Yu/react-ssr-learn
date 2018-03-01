@@ -6,18 +6,22 @@
   "scripts": {
     "build:client": "webpack --config build/webpack.config.client.js",
     "build:server": "webpack --config build/webpack.config.server.js",
-    "dev:client": "cross-env NODE_ENV=development webpack-dev-server --config build/webpack.config.client.js",
+    "dev:client":
+      "cross-env NODE_ENV=development webpack-dev-server --config build/webpack.config.client.js",
     "dev:server": "nodemon server/server.js",
     "clear": "rimraf dist",
     "build": "npm run clear && npm run build:client && npm run build:server",
     "lint": "eslint --ext .js --ext .jsx client/",
-    "precommit": "npm run lint"
+    "precommit": "npm run lint",
+    "start": "cross-env NODE_ENV=production node server/server.js"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "axios": "^0.17.1",
     "body-parser": "^1.18.2",
+    "ejs": "^2.5.7",
+    "ejs-compiled-loader": "^1.1.0",
     "express": "^4.16.2",
     "express-session": "^1.15.6",
     "mobx": "^3.4.1",
@@ -27,8 +31,10 @@
     "react": "^16.2.0",
     "react-async-bootstrapper": "^1.1.2",
     "react-dom": "^16.2.0",
+    "react-helmet": "^5.2.0",
     "react-router": "^4.2.0",
     "react-router-dom": "^4.2.2",
+    "serialize-javascript": "^1.4.0",
     "serve-favicon": "^2.4.5"
   },
   "devDependencies": {

@@ -1,21 +1,24 @@
 import React from 'react'
 import { observer, inject } from 'mobx-react'
 import PropTypes from 'prop-types'
+import Helmet from 'react-helmet'
 import { AppState } from '../../store/app-state'
 
 @inject('appState')
 @observer
 export default class TopicList extends React.Component {
-  static propTypes = {
-    appState: PropTypes.instanceOf(AppState).isRequired
+  propTypes = {
+    appState: PropTypes.instanceOf(AppState)
   }
   constructor() {
     super()
     this.changeName = this.changeName.bind(this)
   }
+
   componentDidMount() {
-    // dom something
+    // do something here
   }
+
   asyncBootstrap() {
     return new Promise(resolve => {
       setTimeout(() => {
@@ -28,9 +31,14 @@ export default class TopicList extends React.Component {
   changeName(event) {
     this.props.appState.changeName(event.target.value)
   }
+
   render() {
     return (
       <div>
+        <Helmet>
+          <title>这是个topic</title>
+          <meta name="description" content="this is description" />
+        </Helmet>
         <input type="text" onChange={this.changeName} />
         <span>{this.props.appState.msg}</span>
       </div>
