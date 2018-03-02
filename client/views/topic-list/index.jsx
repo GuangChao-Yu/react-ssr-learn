@@ -2,7 +2,13 @@ import React from 'react'
 import { observer, inject } from 'mobx-react'
 import PropTypes from 'prop-types'
 import Helmet from 'react-helmet'
+
+import Tabs, { Tab } from 'material-ui/Tabs'
+// import Button from 'material-ui/Button'
+
 import { AppState } from '../../store/app-state'
+import Container from '../layout/container'
+import TopicListItem from './list-item'
 
 @inject('appState')
 @observer
@@ -12,7 +18,11 @@ export default class TopicList extends React.Component {
   }
   constructor() {
     super()
-    this.changeName = this.changeName.bind(this)
+    this.state = {
+      tabIndex: 0
+    }
+    this.changeTab = this.changeTab.bind(this)
+    this.listItemClick = this.listItemClick.bind(this)
   }
 
   componentDidMount() {
@@ -28,20 +38,40 @@ export default class TopicList extends React.Component {
     })
   }
 
-  changeName(event) {
-    this.props.appState.changeName(event.target.value)
+  changeTab(e, index) {
+    this.setState({
+      tabIndex: index
+    })
   }
 
+  /* eslint-disable */
+  listItemClick() {}
+  /* eslint-enable */
+
   render() {
+    const tabData = ['全部', '分享', '工作', '问答', '精品', '测试']
+    const topic = {
+      title: 'title',
+      username: 'Yugc',
+      reply_conut: 20,
+      visit_count: 30,
+      create_at: '2018-03-02',
+      tab: '分享'
+    }
+    const { tabIndex } = this.state
     return (
-      <div>
+      <Container>
         <Helmet>
-          <title>这是个topic</title>
+          <title>设置的标题</title>
           <meta name="description" content="this is description" />
         </Helmet>
-        <input type="text" onChange={this.changeName} />
-        <span>{this.props.appState.msg}</span>
-      </div>
+        <Tabs value={tabIndex} onChange={this.changeTab}>
+          {tabData.map(item => {
+            return <Tab label={item} />
+          })}
+        </Tabs>
+        <TopicListItem onClick={this.listItemClick} topic={topic} />
+      </Container>
     )
   }
 }

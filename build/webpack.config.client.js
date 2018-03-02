@@ -22,13 +22,16 @@ const config = webpackMerge(baseConfig, {
       template: path.join(__dirname, '../client/template.html')
     }),
     new HTMLPlugin({
-      template: '!!ejs-compiled-loader!' + path.join(__dirname, '../client/server.template.ejs'),
+      template:
+        '!!ejs-compiled-loader!' +
+        path.join(__dirname, '../client/server.template.ejs'),
       filename: 'server.ejs'
     })
   ]
 })
 
 if (isDev) {
+  config.devtool = '#cheap-module-eval-source-map'
   config.entry = {
     app: ['react-hot-loader/patch', path.join(__dirname, '../client/main.js')]
   }
@@ -36,7 +39,7 @@ if (isDev) {
     host: '0.0.0.0',
     compress: true,
     port: '8888',
-    contentBase: path.join(__dirname, '../dist'),
+    // contentBase: path.join(__dirname, '../dist'),
     hot: true,
     overlay: {
       errors: true

@@ -44,7 +44,7 @@ if (!isDev) {
 }
 
 app.use(function(error, req, res, next) {
-  console.log(err)
+  console.log(error)
   res.status(500).send(error)
 })
 
